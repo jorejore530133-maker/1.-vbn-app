@@ -1,21 +1,55 @@
-[app]
-title = VBN Fortress
-package.name = vbnfortress
-package.domain = org.vbn.security
-source.dir = .
-source.include_exts = py,png,jpg,kv,atlas
-version = 1.0
-requirements = python3,kivy==2.3.0
-orientation = portrait
-fullscreen = 0
-android.permissions = INTERNET
-android.archs = arm64-v8a
-android.allow_backup = False
-android.accept_sdk_license = True
-android.api = 33
-android.ndk = 25b
-android.build_tools_version = 33.0.2
+name: Build Android APK
 
-[buildozer]
-log_level = 2
-warn_on_root = 1
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+              build-essential \
+              git \
+              zip \
+              unzip \
+              openjdk-17-jdk \
+              autoconf \
+              libtool \
+              pkg-config \
+              zlib1g-dev \
+              libncurses5-dev \
+              libncursesw5-dev \
+              libtinfo6 \
+              cmake \
+              libffi-dev \
+              libssl-dev \
+              automake
+
+      - name: Install Buildozer and Cython
+        run: |
+          pip3 install --upgrade pip setuptools wheel
+          pip3 install buildozer Cython==0.29.33
+
+      - name: Build with Buildozer
+        run: |
+          yes | buildozer -v android debug
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: package
+          path: bin/*.apk
