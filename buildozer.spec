@@ -1,4 +1,3 @@
-
 [app]
 title = VBN Fortress
 package.name = vbnfortress
