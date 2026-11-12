@@ -173,4 +173,24 @@ class VbnFortressApp(App):
         try:
             url = f"https://your-backend-server.com/api/user/{self.username}"
             headers = {"Authorization": f"Bearer {self.auth_token}"}
-            response = requests.get(url, headers=headers,
+            response = requests.get(url, headers=headers, timeout=5)
+            if response.status_code == 200:
+                data = response.json()
+                self.balance = data.get("balance", 0.0)
+                self.transactions = data.get("transactions", [])
+        except:
+            pass
+        
+        self.update_dashboard_ui()
+
+    def update_dashboard_ui(self):
+        dashboard = self.root.get_screen('dashboard')
+        dashboard.balance_label.text = f"Balance: ${self.balance:.2f}"
+        
+        dashboard.history_layout.clear_widgets()
+        for tx in self.transactions:
+            lbl = Label(text=tx, size_hint_y=None, height=40, font_size='14sp')
+            dashboard.history_layout.add_widget(lbl)
+
+if __name__ == '__main__':
+    VbnFortressApp().run()
