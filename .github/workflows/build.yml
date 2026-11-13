@@ -1,4 +1,74 @@
-name: Build Android APK
+name: Build Android APKname: Build Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 1. حل مشكلة توافق بايثون (تثبيت إصدار مستقر 3.10 بدلاً من 3.14)
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      # 2. تثبيت حزم النظام وأدوات الترجمة (لحل أخطاء Cython و SDL2 و OpenSSL)
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            git \
+            zip \
+            unzip \
+            openjdk-17-jdk \
+            autoconf \
+            libtool \
+            pkg-config \
+            zlib1g-dev \
+            libncurses5-dev \
+            libncursesw5-dev \
+            libtinfo5 \
+            cmake \
+            libffi-dev \
+            libssl-dev \
+            automake \
+            ccache
+
+      # 3. تثبيت Buildozer و Cython بإصدارات متوافقة
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install buildozer cython==0.29.36 virtualenv
+
+      # 4. تفعيل الذاكرة المؤقتة لتسريع البناء وتجنب انقطاع الاتصال
+      - name: Cache Buildozer global directory
+        uses: actions/cache@v4
+        with:
+          path: .buildozer
+          key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
+          restore-keys: |
+            ${{ runner.os }}-buildozer-
+
+      # 5. قبول تراخيص أندرويد تلقائياً وبناء التطبيق
+      - name: Build with Buildozer
+        run: |
+          yes | buildozer android debug
+
+      # 6. رفع ملف APK الناتج
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: bin/*.apk
+
 
 on:
   push:
